@@ -1,0 +1,73 @@
+import RPi.GPIO as GPIO
+import dht11
+
+import json
+import MySQLdb
+import datetime
+from pyqtgraph.Qt import QtGui, QtCore
+import pyqtgraph as pg
+import time
+import numpy as np
+# initialize GPIO
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM)
+GPIO.cleanup()
+
+# read data using pin 14
+instance = dht11.DHT11(pin = 4)
+result = instance.read()
+fecha = datetime.datetime.now()
+win = pg.GraphicsWindow()
+win.setWindowTitle('Temp y humedad plotting')
+
+
+  
+if    result.is_valid():
+    for i in range(0,5): 
+       #result = instance.read()
+       print("Temperature: %d C" % result.temperature)
+    
+       print("Humidity: %d %%" % result.humidity)
+       time.sleep(2)
+       db = MySQLdb.connect("localhost","root","1234","temperatura")
+       curs = db.cursor()    
+       curs.execute("""INSERT INTO temps(fecha,hum,temp)values(%s,%s,%s)""",(fecha, result.humidity, result.temperature))
+       db.commit()
+        
+else:
+       print("Error: %d" % result.error)
+p1 = win.addPlot()
+win.nextRow()
+p2 = win.addPlot()
+data1 = [0] * 300
+data2 = [0] * 300
+
+curve1 = p1.plot(data1, name="temp", pen=(255,0,0))
+curve2 = p1.plot(data2, name="hum", pen=(0,255,0))
+
+
+def update1():
+         
+           global data1, curve1, result
+          # t = float(instance.read['timestamp'])
+   # t = float(result.temperature['timestamp'])
+    #temp = result.temperature['temp']
+    #hum = result.humidity['hum']
+
+           data1[:-1] = data1[1:]
+           data1[-1] = result.temperature
+           data2[:-1] = data2[1:]
+           data2[-1] = result.humidity
+           curve1.setData(data1)
+           curve2.setData(data2)
+def update():
+           update1()
+timer = pg.QtCore.QTimer()
+timer.timeout.connect(update)
+timer.start(10)
+update1()
+
+if __name__ == '__main__':
+    import sys
+    if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
+        QtGui.QApplication.instance().exec_()

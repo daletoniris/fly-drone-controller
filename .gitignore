@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.o
+*.so
+*.egg
+build/
+dist/
+*.egg-info/
+.DS_Store
+local.properties
+*.mp4
+*.avi
+*.mov
+tensor/
